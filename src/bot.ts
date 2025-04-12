@@ -1,13 +1,14 @@
 import dotenv from "dotenv";
 import { Telegraf, Context, Markup } from "telegraf";
 import { Update, Message, InlineKeyboardMarkup, UserFromGetMe } from "telegraf/typings/core/types/typegram";
+import { CaptionMessage } from "./types";
 
 dotenv.config();
 
 const BOT_TOKEN: string | undefined = process.env.BOT_TOKEN;
 
 if (!BOT_TOKEN) {
-  throw new Error("Не задан BOT_TOKEN в .env");
+  throw new Error("BOT_TOKEN not set in .env");
 }
 
 // Initializing a Bot with Context Types
@@ -20,14 +21,16 @@ bot.start((ctx) => {
 
 // Processing any incoming messages
 bot.on("message", async (ctx) => {
-  const message: Message.TextMessage = ctx.message as Message.TextMessage;
+  const message = ctx.message as Message.TextMessage | CaptionMessage;
+
+  // Search and extract text from message
+  const textContent: string | undefined =
+    "text" in message ? message.text : message.caption;
 
   // Check if there is text in a message
-  if (!message.text) {
+  if (!textContent) {
     return ctx.reply("Сообщение не содержит текста.");
   }
-
-  const forwardedText: string = message.text;
 
   // Button options
   const keyboard: Markup.Markup<InlineKeyboardMarkup> = Markup.inlineKeyboard([
@@ -35,7 +38,7 @@ bot.on("message", async (ctx) => {
     [Markup.button.callback("Skip this", "skip")],
   ]);
 
-  await ctx.reply(forwardedText, keyboard);
+  await ctx.reply(textContent, keyboard);
 });
 
 // Button: Create new lead in the CRM
